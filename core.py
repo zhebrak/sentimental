@@ -28,25 +28,27 @@ class Sentimental():
         ).get(u'docSentiment')
 
     def sentiment_score(self, text):
-        score = self._get_sentiment(text).get(u'score')
-        if score:
-            self.prev_score = score
-        else:
-            return self.prev_score
+        self.prev_score = self._get_sentiment(text).get(u'score', self.prev_score)
+        return self.prev_score
 
-        return score
-
-    def sentiment_over_time(self, data, output='sentimental.png'):
+    def sentiment_over_time(self, data, avg_window=3, output='sentimental.png'):
         """
         Draws a time series chart of text sentiment given:
             :param data: list of tuples (str, datetime object)
+            :param avg_window: size of moving average window
             :param output: (optional) output file
         """
         text_list, time_list = zip(*data)
-        plt.plot(time_list, [self.sentiment_score(text) for text in text_list])
-        plt.savefig(output)
 
-        # you can add mean for smoothing
+        score_list = [float(self.sentiment_score(text)) for text in text_list]
+        avg = lambda l: sum(l) / len(l)
+        avg_score_list = [
+            avg(score_list[idx:idx + avg_window])
+            for idx in range(len(score_list) - avg_window - 1)
+        ]
+
+        plt.plot(time_list, score_list)
+        plt.savefig(output)
 
 
 if __name__ == '__main__':
